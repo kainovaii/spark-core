@@ -71,6 +71,7 @@ public class BaseController extends ApiResponse
         if (BCrypt.checkpw(password, user.getPassword())) {
             session.attribute("logged", true);
             session.attribute("user_id", user.getId());
+            session.attribute("email", user.getEmail());
             session.attribute("username", user.getUsername());
             session.attribute("roles", user.getRole());
             return true;
