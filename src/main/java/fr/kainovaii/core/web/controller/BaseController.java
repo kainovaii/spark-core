@@ -71,9 +71,8 @@ public class BaseController extends ApiResponse
         if (BCrypt.checkpw(password, user.getPassword())) {
             session.attribute("logged", true);
             session.attribute("user_id", user.getId());
-            session.attribute("email", user.getEmail());
             session.attribute("username", user.getUsername());
-            session.attribute("roles", user.getRole());
+            session.attribute("role", user.getRole());
             return true;
         }
         return false;
@@ -92,7 +91,8 @@ public class BaseController extends ApiResponse
         return Boolean.TRUE.equals(logged);
     }
 
-    protected static UserDetails getLoggedUser(Request req)
+    @SuppressWarnings("unchecked")
+    protected static <T extends UserDetails> T getLoggedUser(Request req)
     {
         Session session = req.session(false);
         if (session == null) return null;
@@ -100,12 +100,12 @@ public class BaseController extends ApiResponse
         Object userId = session.attribute("user_id");
         if (userId == null) return null;
 
-        return getUserService().loadById(userId);
+        return (T) getUserService().loadById(userId);
     }
 
     protected static boolean hasRole(Request req, String role) {
         UserDetails user = getLoggedUser(req);
-        return user != null && user.getRole().contains(role);
+        return user != null && role.equals(user.getRole());
     }
 
     protected static void requireLogin(Request req, Response res)
