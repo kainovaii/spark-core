@@ -103,24 +103,16 @@ public class ControllerLoader
             try {
                 RoleChecker.checkAccess(req, res);
 
-                if (method.isAnnotationPresent(CsrfProtect.class)) {
+                if (method.isAnnotationPresent(CsrfProtect.class))
+                {
                     if (!CsrfProtection.validate(req)) {
                         logger.warn("CSRF validation failed for {}.{}", controller.getClass().getSimpleName(), method.getName());
-
                         if (req.session(false) != null) {
-                            req.session().attribute("flash_error", "Token de sécurité invalide. Veuillez réessayer.");
+                            req.session().attribute("flash_error", "Invalid security token. Please try again.");
                         }
-
                         res.status(403);
-
-                        String acceptHeader = req.headers("Accept");
-                        if (acceptHeader != null && acceptHeader.contains("application/json")) {
-                            res.type("application/json");
-                            return "{\"error\":\"CSRF token validation failed\"}";
-                        } else {
-                            res.redirect("/error");
-                            return null;
-                        }
+                        res.type("text/html");
+                        return "<h1>403 Forbidden</h1><p>Invalid security token. Please try again.</p>";
                     }
                 }
 
