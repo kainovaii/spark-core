@@ -7,7 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 
+import static fr.kainovaii.core.web.controller.BaseController.*;
+import static fr.kainovaii.core.web.template.TemplateManager.setGlobal;
 import static spark.Spark.*;
 
 public class WebServer
@@ -27,11 +30,19 @@ public class WebServer
             res.body("{\"error\":\"Internal server error: " + e.getMessage() + "\"}");
         });
 
-        before((req, res) -> {
+        before((req, res) ->
+        {
+            setGlobal("request", req);
+            setGlobal("response", res);
+            setGlobal("isLogged", isLogged(req));
+            if (isLogged(req)) setGlobal("loggedUser", getLoggedUser(req));
+            Map<String, String> flashes = collectFlashes(req);
+            setGlobal("flashes", flashes);
+
             try {
                 Class<?> globalAdvice = Class.forName("fr.kainovaii.spark.app.controllers.GlobalAdviceController");
-                Method applyGlobals = globalAdvice.getMethod("applyGlobals", spark.Request.class);
-                applyGlobals.invoke(null, req);
+                Method applyGlobals = globalAdvice.getMethod("applyGlobals", spark.Request.class, spark.Response.class);  // ← Ajoute Response.class
+                applyGlobals.invoke(null, req, res);  // ← Ajoute res
             } catch (ClassNotFoundException e) {} catch (Exception e) {
                 logger.warn("Error calling GlobalAdviceController.applyGlobals", e);
             }

@@ -6,6 +6,7 @@ import fr.kainovaii.core.security.user.UserDetailsService;
 import fr.kainovaii.core.security.user.UserDetailsServiceImpl;
 import fr.kainovaii.core.web.ApiResponse;
 import fr.kainovaii.core.web.di.Container;
+import fr.kainovaii.core.web.error.ErrorHandler;
 import fr.kainovaii.core.web.template.TemplateManager;
 import org.mindrot.jbcrypt.BCrypt;
 import spark.*;
@@ -84,7 +85,7 @@ public class BaseController extends ApiResponse
         if (session != null) session.invalidate();
     }
 
-    protected static boolean isLogged(Request req)
+    public static boolean isLogged(Request req)
     {
         Session session = req.session(false);
         if (session == null) return false;
@@ -94,7 +95,7 @@ public class BaseController extends ApiResponse
     }
 
     @SuppressWarnings("unchecked")
-    protected static <T extends UserDetails> T getLoggedUser(Request req)
+    public static <T extends UserDetails> T getLoggedUser(Request req)
     {
         Session session = req.session(false);
         if (session == null) return null;
@@ -162,12 +163,15 @@ public class BaseController extends ApiResponse
 
     protected String render(String template, Map<String, Object> model)
     {
+        Map<String, Object> merged = new HashMap<>(TemplateManager.getGlobals());
+        if (model != null) merged.putAll(model);
+
         try {
-            Map<String, Object> merged = new HashMap<>(TemplateManager.getGlobals());
-            if (model != null) merged.putAll(model);
             return TemplateManager.get().render("view/" + template, merged);
         } catch (Exception exception) {
-            return exception.getMessage();
+            Request req = (Request) merged.get("request");
+            Response res = (Response) merged.get("response");
+            return ErrorHandler.handle(exception, req, res);
         }
     }
 }
