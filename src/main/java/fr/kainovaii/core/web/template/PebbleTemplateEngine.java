@@ -2,6 +2,7 @@ package fr.kainovaii.core.web.template;
 
 import fr.kainovaii.core.security.csrf.CsrfExtension;
 import fr.kainovaii.core.web.route.RoutePebbleExtension;
+import fr.kainovaii.core.web.flash.FlashExtension;
 import fr.kainovaii.core.web.template.extension.StripTagsFilter;
 import spark.ModelAndView;
 import spark.TemplateEngine;
@@ -23,6 +24,7 @@ public class PebbleTemplateEngine extends TemplateEngine
             .extension(new RoutePebbleExtension())
             .extension(new StripTagsFilter())
             .extension(new CsrfExtension())
+            .extension(new FlashExtension())
             .cacheActive(true)
             .build();
     }

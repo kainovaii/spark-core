@@ -119,25 +119,30 @@ public class BaseController extends ApiResponse
         }
     }
 
-    protected static void setFlash(Request req, String key, String message)
+    protected static void setFlash(Request req, String type, String message)
     {
         Session session = req.session();
-        session.attribute("flash_" + key, message);
+        @SuppressWarnings("unchecked")
+        Map<String, String> flashes = (Map<String, String>) session.attribute("_flash_messages");
+
+        if (flashes == null) {
+            flashes = new HashMap<>();
+            session.attribute("_flash_messages", flashes);
+        }
+
+        flashes.put(type, message);
     }
 
     public static Map<String, String> collectFlashes(Request req)
     {
         Session session = req.session(false);
-        if (session == null) return Map.of();
+        if (session == null) return new HashMap<>();
 
-        Map<String, String> flashes = new HashMap<>();
-        for (String attr : session.attributes()) {
-            if (attr.startsWith("flash_")) {
-                String key = attr.substring(6);
-                flashes.put(key, session.attribute(attr));
-                session.removeAttribute(attr);
-            }
-        }
+        @SuppressWarnings("unchecked")
+        Map<String, String> flashes = (Map<String, String>) session.attribute("_flash_messages");
+
+        if (flashes == null) { return new HashMap<>(); }
+        session.removeAttribute("_flash_messages");
         return flashes;
     }
 

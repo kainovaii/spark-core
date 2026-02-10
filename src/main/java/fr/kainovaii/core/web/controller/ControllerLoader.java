@@ -112,15 +112,15 @@ public class ControllerLoader
                     MiddlewareManager.executeBefore(beforeAnnotation.value(), req, res);
                 }
 
-                if (method.isAnnotationPresent(CsrfProtect.class)) {
+                if (method.isAnnotationPresent(CsrfProtect.class))
+                {
                     if (!CsrfProtection.validate(req)) {
                         logger.warn("CSRF validation failed for {}.{}", controller.getClass().getSimpleName(), method.getName());
                         if (req.session(false) != null) {
                             req.session().attribute("flash_error", "Invalid security token. Please try again.");
                         }
                         res.status(403);
-                        res.type("text/html");
-                        return "<h1>403 Forbidden</h1><p>Invalid security token. Please try again.</p>";
+                        return ErrorHandler.handle(new SecurityException("CSRF token validation failed"), req, res );
                     }
                 }
 
