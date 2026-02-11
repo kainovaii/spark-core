@@ -41,8 +41,8 @@ public class WebServer
 
             try {
                 Class<?> globalAdvice = Class.forName("fr.kainovaii.spark.app.controllers.GlobalAdviceController");
-                Method applyGlobals = globalAdvice.getMethod("applyGlobals", spark.Request.class, spark.Response.class);  // ← Ajoute Response.class
-                applyGlobals.invoke(null, req, res);  // ← Ajoute res
+                Method applyGlobals = globalAdvice.getMethod("applyGlobals", spark.Request.class, spark.Response.class);
+                applyGlobals.invoke(null, req, res);
             } catch (ClassNotFoundException e) {} catch (Exception e) {
                 logger.warn("Error calling GlobalAdviceController.applyGlobals", e);
             }
