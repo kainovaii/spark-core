@@ -15,7 +15,8 @@
   <distributionManagement>
     <repository>
       <id>github</id>
-      <url>https://maven.pkg.github.com/kainovaii/obsidian-core</url>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/obsidian-framework/obsidian-core</url>
     </repository>
   </distributionManagement>
   <dependencies>
