@@ -13,7 +13,7 @@ public class DB
     private static DB instance;
     private final Logger logger;
     private final String type;
-    private final String dbPath; // Pour SQLite
+    private final String dbPath;
     private HikariDataSource pool;
 
     public static DB initSQLite(String path, Logger logger) {
@@ -50,7 +50,7 @@ public class DB
     {
         this.type = type;
         this.logger = logger;
-        this.dbPath = database; // Stocke le path pour SQLite
+        this.dbPath = database;
 
         if (type.equals("sqlite")) {
             logger.info("SQLite database initialized: " + database);
