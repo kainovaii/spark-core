@@ -12,15 +12,9 @@ public class Obsidian
     public final static Logger logger = Logger.getLogger("Spark");
     private static String basePackage;
 
-    public Obsidian()
-    {
-        basePackage = "fr.kainovaii.obsidian.app";
-    }
+    public Obsidian() { basePackage = "fr.kainovaii.obsidian.app"; }
 
-    public Obsidian(Class<?> mainClass)
-    {
-        basePackage = mainClass.getPackage().getName();
-    }
+    public Obsidian(Class<?> mainClass) { basePackage = mainClass.getPackage().getName(); }
 
     public Obsidian setBasePackage(String basePackage)
     {
@@ -28,10 +22,7 @@ public class Obsidian
         return this;
     }
 
-    public static String getBasePackage()
-    {
-        return Obsidian.basePackage;
-    }
+    public static String getBasePackage() { return Obsidian.basePackage; }
 
     public void connectDatabase()
     {
