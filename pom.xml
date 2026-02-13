@@ -19,6 +19,15 @@
       <url>https://maven.pkg.github.com/obsidian-framework/obsidian-core</url>
     </repository>
   </distributionManagement>
+  <repositories>
+    <repository>
+      <id>github</id>
+      <url>https://maven.pkg.github.com/sparkjava-community/spark</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
   <dependencies>
     <dependency>
       <groupId>com.zaxxer</groupId>
