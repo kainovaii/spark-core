@@ -3,7 +3,13 @@ package fr.kainovaii.obsidian.core;
 import fr.kainovaii.obsidian.core.database.DB;
 import fr.kainovaii.obsidian.core.database.MigrationManager;
 import fr.kainovaii.obsidian.core.web.di.ComponentScanner;
+import fr.kainovaii.obsidian.core.web.di.Container;
 import fr.kainovaii.obsidian.core.web.WebServer;
+import fr.kainovaii.obsidian.core.web.component.core.ComponentManager;
+import fr.kainovaii.obsidian.core.web.component.pebble.ComponentExtension;
+import fr.kainovaii.obsidian.core.web.component.scanner.LiveComponentScanner;
+import io.pebbletemplates.pebble.PebbleEngine;
+import io.pebbletemplates.pebble.loader.ClasspathLoader;
 
 import java.util.logging.Logger;
 
@@ -11,6 +17,7 @@ public class Obsidian
 {
     public final static Logger logger = Logger.getLogger("Spark");
     private static String basePackage;
+    private static ComponentManager componentManager;
 
     public Obsidian()
     {
@@ -91,6 +98,41 @@ public class Obsidian
         ComponentScanner.scanPackage();
     }
 
+    public void loadLiveComponents()
+    {
+        System.out.println("Loading LiveComponents...");
+
+        try {
+            ClasspathLoader loader = new ClasspathLoader();
+            PebbleEngine componentPebble = new PebbleEngine.Builder()
+                    .loader(loader)
+                    .cacheActive(true)
+                    .build();
+
+            componentManager = new ComponentManager(componentPebble);
+
+            LiveComponentScanner.scan(basePackage, componentManager);
+
+            componentPebble = new PebbleEngine.Builder()
+                    .loader(loader)
+                    .extension(new ComponentExtension(componentManager))
+                    .cacheActive(true)
+                    .build();
+
+            java.lang.reflect.Field field = ComponentManager.class.getDeclaredField("pebbleEngine");
+            field.setAccessible(true);
+            field.set(componentManager, componentPebble);
+
+            // Enregistrer dans le container
+            Container.singleton(ComponentManager.class, componentManager);
+
+            System.out.println("LiveComponents loaded successfully!");
+        } catch (Exception e) {
+            logger.severe("Failed to load LiveComponents: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public static EnvLoader loadConfigAndEnv()
     {
         EnvLoader env = new EnvLoader();
@@ -114,7 +156,7 @@ public class Obsidian
         final String MAGENTA = "\u001B[35m";
 
         System.out.println(CYAN + "+--------------------------------------+" + RESET);
-        System.out.println(CYAN + "|          Obsidian 1.0                    |" + RESET);
+        System.out.println(CYAN + "|          Obsidian 1.0                |" + RESET);
         System.out.println(CYAN + "+--------------------------------------+" + RESET);
         System.out.println(GREEN + "| Developpeur       : KainoVaii        |" + RESET);
         System.out.println(GREEN + "| Version           : 1.0              |" + RESET);
@@ -132,6 +174,7 @@ public class Obsidian
         connectDatabase();
         loadMigrations();
         loadContainer();
+        loadLiveComponents();
         startWebServer();
     }
 
@@ -140,5 +183,9 @@ public class Obsidian
         Obsidian app = new Obsidian(mainClass);
         app.init();
         return app;
+    }
+
+    public static ComponentManager getComponentManager() {
+        return componentManager;
     }
 }

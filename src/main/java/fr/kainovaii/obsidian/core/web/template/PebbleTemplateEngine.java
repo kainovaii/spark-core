@@ -1,6 +1,7 @@
 package fr.kainovaii.obsidian.core.web.template;
 
 import fr.kainovaii.obsidian.core.security.csrf.CsrfExtension;
+import fr.kainovaii.obsidian.core.web.component.pebble.ComponentHelperExtension;
 import fr.kainovaii.obsidian.core.web.route.RoutePebbleExtension;
 import fr.kainovaii.obsidian.core.web.flash.FlashExtension;
 import fr.kainovaii.obsidian.core.web.template.extension.StripTagsFilter;
@@ -25,6 +26,7 @@ public class PebbleTemplateEngine extends TemplateEngine
             .extension(new StripTagsFilter())
             .extension(new CsrfExtension())
             .extension(new FlashExtension())
+            .extension(new ComponentHelperExtension())
             .cacheActive(true)
             .build();
     }

@@ -51,7 +51,7 @@ public class ControllerLoader
 
             for (Class<?> adviceClass : adviceClasses) {
                 try {
-                    Method applyGlobals = adviceClass.getMethod("applyGlobals", spark.Request.class, spark.Response.class);
+                    Method applyGlobals = adviceClass.getMethod("applyGlobals", Request.class, Response.class);
                     applyGlobals.invoke(null, req, res);
                 } catch (NoSuchMethodException e) {
                     logger.info("@GlobalAdvice class " + adviceClass.getName() + " doesn't have applyGlobals(Request, Response) method");

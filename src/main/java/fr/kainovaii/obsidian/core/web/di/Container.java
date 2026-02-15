@@ -45,13 +45,4 @@ public class Container
         singletons.clear();
         bindings.clear();
     }
-
-    public static void printRegistered()
-    {
-        System.out.println("\nRegistered Components:");
-        singletons.forEach((clazz, instance) -> {
-            System.out.println(clazz.getSimpleName() + " -> " + instance.getClass().getSimpleName());
-        });
-        System.out.println();
-    }
 }

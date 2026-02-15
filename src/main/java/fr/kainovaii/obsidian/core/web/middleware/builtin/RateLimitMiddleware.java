@@ -13,7 +13,7 @@ import static spark.Spark.halt;
 public class RateLimitMiddleware implements Middleware
 {
     private static final int MAX_REQUESTS = 100;
-    private static final long TIME_WINDOW = 60000; // 1 minute
+    private static final long TIME_WINDOW = 60000;
     
     private static final Map<String, RequestCounter> counters = new ConcurrentHashMap<>();
 

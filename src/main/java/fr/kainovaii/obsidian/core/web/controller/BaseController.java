@@ -19,7 +19,8 @@ public class BaseController extends ApiResponse
 {
     private static UserDetailsService userService;
 
-    protected static UserDetailsService getUserService() {
+    protected static UserDetailsService getUserService()
+    {
         if (userService == null) {
             try {
                 userService = Container.resolve(UserDetailsService.class);
@@ -30,11 +31,12 @@ public class BaseController extends ApiResponse
         return userService;
     }
 
-    private static UserDetailsService autoDetectUserDetailsService() {
+    private static UserDetailsService autoDetectUserDetailsService()
+    {
         try {
             org.reflections.Reflections reflections = new org.reflections.Reflections(Obsidian.getBasePackage());
 
-            java.util.Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(UserDetailsServiceImpl.class);
+            Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(UserDetailsServiceImpl.class);
 
             if (annotatedClasses.isEmpty()) {
                 throw new RuntimeException("No class annotated with @UserDetailsServiceImpl found in " + Obsidian.getBasePackage());
