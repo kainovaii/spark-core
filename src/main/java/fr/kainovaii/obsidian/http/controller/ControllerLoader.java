@@ -1,0 +1,105 @@
+package fr.kainovaii.obsidian.http.controller;
+
+import fr.kainovaii.obsidian.core.Obsidian;
+import fr.kainovaii.obsidian.http.controller.annotations.Controller;
+import fr.kainovaii.obsidian.http.controller.annotations.GlobalAdvice;
+import fr.kainovaii.obsidian.security.role.RoleChecker;
+import fr.kainovaii.obsidian.routing.RouteLoader;
+import fr.kainovaii.obsidian.realtime.sse.SseLoader;
+import org.reflections.Reflections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static spark.Spark.before;
+
+/**
+ * Controller discovery and registration system.
+ * Scans for @Controller and @GlobalAdvice annotated classes and registers their routes.
+ */
+public class ControllerLoader
+{
+    /** Logger instance */
+    private static final Logger logger = LoggerFactory.getLogger(ControllerLoader.class);
+
+    /**
+     * Loads and registers all controllers in application.
+     * Discovers @Controller classes, registers routes and SSE endpoints.
+     */
+    public static void loadControllers()
+    {
+        before("/*", RoleChecker::checkAccess);
+        List<Object> controllers = discoverControllers();
+        RouteLoader.registerRoutes(controllers);
+        SseLoader.registerSseRoutes(controllers);
+
+        logger.info("Loaded {} controllers", controllers.size());
+    }
+
+    /**
+     * Discovers all @Controller annotated classes.
+     *
+     * @return List of instantiated controller objects
+     */
+    private static List<Object> discoverControllers()
+    {
+        Reflections reflections = new Reflections(Obsidian.getBasePackage());
+        Set<Class<?>> controllerClasses = reflections.getTypesAnnotatedWith(Controller.class);
+
+        return controllerClasses.stream()
+                .map(ControllerLoader::instantiateController)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Loads and executes @GlobalAdvice annotated classes.
+     * Calls applyGlobals() method on each advice class.
+     *
+     * @param req HTTP request
+     * @param res HTTP response
+     */
+    public static void loadAdvicesControllers(Request req, Response res)
+    {
+        try {
+            Reflections reflections = new Reflections(Obsidian.getBasePackage());
+            Set<Class<?>> adviceClasses = reflections.getTypesAnnotatedWith(GlobalAdvice.class);
+
+            for (Class<?> adviceClass : adviceClasses) {
+                try {
+                    Method applyGlobals = adviceClass.getMethod("applyGlobals", Request.class, Response.class);
+                    applyGlobals.invoke(null, req, res);
+                } catch (NoSuchMethodException e) {
+                    logger.info("@GlobalAdvice class " + adviceClass.getName() + " doesn't have applyGlobals(Request, Response) method");
+                } catch (Exception e) {
+                    logger.info("Error calling applyGlobals on " + adviceClass.getName() + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            logger.info("Error scanning for @GlobalAdvice: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Instantiates a controller class.
+     *
+     * @param cls Controller class
+     * @return Controller instance or null if instantiation fails
+     */
+    private static Object instantiateController(Class<?> cls)
+    {
+        try {
+            return cls.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            logger.error("Failed to instantiate controller: {}", cls.getName(), e);
+            return null;
+        }
+    }
+}

@@ -1,45 +1,78 @@
 package fr.kainovaii.obsidian.core;
 
-import fr.kainovaii.obsidian.core.database.DB;
-import fr.kainovaii.obsidian.core.database.MigrationManager;
-import fr.kainovaii.obsidian.core.web.di.ComponentScanner;
-import fr.kainovaii.obsidian.core.web.di.Container;
-import fr.kainovaii.obsidian.core.web.WebServer;
-import fr.kainovaii.obsidian.core.web.component.core.ComponentManager;
-import fr.kainovaii.obsidian.core.web.component.pebble.ComponentExtension;
-import fr.kainovaii.obsidian.core.web.component.scanner.LiveComponentScanner;
+import fr.kainovaii.obsidian.database.DB;
+import fr.kainovaii.obsidian.database.MigrationManager;
+import fr.kainovaii.obsidian.di.ComponentScanner;
+import fr.kainovaii.obsidian.di.Container;
+import fr.kainovaii.obsidian.livecomponents.core.ComponentManager;
+import fr.kainovaii.obsidian.livecomponents.pebble.ComponentExtension;
+import fr.kainovaii.obsidian.livecomponents.scanner.LiveComponentScanner;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.loader.ClasspathLoader;
 
 import java.util.logging.Logger;
 
+/**
+ * Main class of the Obsidian framework.
+ * Manages initialization and configuration of all framework components.
+ */
 public class Obsidian
 {
+    /** Logger used by Spark */
     public final static Logger logger = Logger.getLogger("Spark");
+
+    /** Base package for component scanning */
     private static String basePackage;
+
+    /** LiveComponents manager */
     private static ComponentManager componentManager;
 
+    /**
+     * Default constructor.
+     * Initializes base package to "fr.kainovaii.obsidian.app".
+     */
     public Obsidian()
     {
         basePackage = "fr.kainovaii.obsidian.app";
     }
 
+    /**
+     * Constructor with main class.
+     * Automatically determines base package from provided class.
+     *
+     * @param mainClass The application's main class
+     */
     public Obsidian(Class<?> mainClass)
     {
         basePackage = mainClass.getPackage().getName();
     }
 
+    /**
+     * Sets the base package for component scanning.
+     *
+     * @param basePackage The base package
+     * @return Current instance for chaining
+     */
     public Obsidian setBasePackage(String basePackage)
     {
         Obsidian.basePackage = basePackage;
         return this;
     }
 
+    /**
+     * Gets the configured base package.
+     *
+     * @return The base package
+     */
     public static String getBasePackage()
     {
         return Obsidian.basePackage;
     }
 
+    /**
+     * Initializes database connection.
+     * Supports SQLite, MySQL and PostgreSQL based on configuration.
+     */
     public void connectDatabase()
     {
         System.out.println("Loading database");
@@ -86,6 +119,9 @@ public class Obsidian
         }
     }
 
+    /**
+     * Loads and executes database migrations.
+     */
     public void loadMigrations()
     {
         MigrationManager migrations = new MigrationManager(DB.getInstance(), logger);
@@ -93,11 +129,19 @@ public class Obsidian
         migrations.migrate();
     }
 
+    /**
+     * Initializes dependency injection container.
+     * Scans base package to discover components.
+     */
     public void loadContainer()
     {
         ComponentScanner.scanPackage();
     }
 
+    /**
+     * Initializes LiveComponents system.
+     * Configures Pebble and registers components in container.
+     */
     public void loadLiveComponents()
     {
         System.out.println("Loading LiveComponents...");
@@ -123,7 +167,6 @@ public class Obsidian
             field.setAccessible(true);
             field.set(componentManager, componentPebble);
 
-            // Enregistrer dans le container
             Container.singleton(ComponentManager.class, componentManager);
 
             System.out.println("LiveComponents loaded successfully!");
@@ -133,6 +176,11 @@ public class Obsidian
         }
     }
 
+    /**
+     * Loads configuration and environment variables.
+     *
+     * @return EnvLoader instance containing configuration
+     */
     public static EnvLoader loadConfigAndEnv()
     {
         EnvLoader env = new EnvLoader();
@@ -140,10 +188,21 @@ public class Obsidian
         return env;
     }
 
+    /**
+     * Starts the web server.
+     */
     public void startWebServer() { new WebServer().start(); }
 
+    /**
+     * Gets web server port from configuration.
+     *
+     * @return Configured port for web server
+     */
     public static int getWebPort() { return Integer.parseInt(Obsidian.loadConfigAndEnv().get("PORT_WEB")); }
 
+    /**
+     * Displays startup message (MOTD) in console.
+     */
     public void registerMotd()
     {
         EnvLoader env = new EnvLoader();
@@ -151,22 +210,24 @@ public class Obsidian
         env.load();
         final String RESET = "\u001B[0m";
         final String CYAN = "\u001B[36m";
-        final String YELLOW = "\u001B[33m";
         final String GREEN = "\u001B[32m";
-        final String MAGENTA = "\u001B[35m";
 
         System.out.println(CYAN + "+--------------------------------------+" + RESET);
         System.out.println(CYAN + "|          Obsidian 1.0                |" + RESET);
         System.out.println(CYAN + "+--------------------------------------+" + RESET);
-        System.out.println(GREEN + "| Developpeur       : KainoVaii        |" + RESET);
+        System.out.println(GREEN + "| Developer         : KainoVaii        |" + RESET);
         System.out.println(GREEN + "| Version           : 1.0              |" + RESET);
-        System.out.println(GREEN + "| Environnement     : " + env.get("ENVIRONMENT") + "              |" + RESET);
+        System.out.println(GREEN + "| Environment       : " + env.get("ENVIRONMENT") + "              |" + RESET);
         System.out.println(CYAN + "+--------------------------------------+" + RESET);
-        System.out.println(CYAN + "|      Chargement des modules...       |" + RESET);
+        System.out.println(CYAN + "|      Loading modules...              |" + RESET);
         System.out.println(CYAN + "+--------------------------------------+" + RESET);
         System.out.println();
     }
 
+    /**
+     * Initializes all framework components in order.
+     * Sequence: MOTD → Config → Database → Migrations → Container → LiveComponents → WebServer
+     */
     public void init()
     {
         registerMotd();
@@ -178,6 +239,12 @@ public class Obsidian
         startWebServer();
     }
 
+    /**
+     * Main entry point to start Obsidian application.
+     *
+     * @param mainClass The application's main class
+     * @return Initialized Obsidian instance
+     */
     public static Obsidian run(Class<?> mainClass)
     {
         Obsidian app = new Obsidian(mainClass);
@@ -185,6 +252,11 @@ public class Obsidian
         return app;
     }
 
+    /**
+     * Gets the LiveComponents manager.
+     *
+     * @return ComponentManager instance
+     */
     public static ComponentManager getComponentManager() {
         return componentManager;
     }

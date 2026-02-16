@@ -1,43 +1,201 @@
 package fr.kainovaii.obsidian.core;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
+/**
+ * Environment configuration loader for Obsidian applications.
+ * Handles .env file discovery, creation from template, and variable access.
+ */
 public class EnvLoader
 {
-    private static final String TARGET_DIR = "Spark";
-    private static final String TARGET_FILE = ".env";
-    private Dotenv dotenv;
+    private static final Logger logger = LoggerFactory.getLogger(EnvLoader.class);
+    private static final String ENV_FILE = ".env";
+    private static final String ENV_TEMPLATE = "/env.template";
 
+    private Dotenv dotenv;
+    private final Path workingDirectory;
+
+    /**
+     * Creates an EnvLoader with the current working directory.
+     */
+    public EnvLoader()
+    {
+        this(Paths.get("").toAbsolutePath());
+    }
+
+    /**
+     * Creates an EnvLoader with a specific working directory.
+     *
+     * @param workingDirectory The directory where .env file should be located
+     */
+    public EnvLoader(Path workingDirectory)
+    {
+        this.workingDirectory = workingDirectory;
+    }
+
+    /**
+     * Loads environment variables from .env file.
+     * Creates the file from template if it doesn't exist.
+     *
+     * @throws RuntimeException if loading fails
+     */
     public void load()
     {
         try {
-            Path targetDir = Paths.get(TARGET_DIR);
-            Path targetFile = targetDir.resolve(TARGET_FILE);
+            Path envFile = workingDirectory.resolve(ENV_FILE);
 
-            if (!Files.exists(targetDir)) Files.createDirectories(targetDir);
-            if (!Files.exists(targetFile)) copyDefaultEnv(targetFile);
+            if (!Files.exists(envFile)) {
+                logger.info("No .env file found. Creating from template...");
+                copyTemplateEnv(envFile);
+            }
 
             dotenv = Dotenv.configure()
-                .directory(TARGET_DIR)
-                .filename(TARGET_FILE)
-                .load();
+                    .directory(workingDirectory.toString())
+                    .filename(ENV_FILE)
+                    .ignoreIfMissing()
+                    .load();
 
-        } catch (IOException e) { throw new RuntimeException("Erreur lors du chargement du fichier .env", e); }
-    }
+            logger.info("Environment configuration loaded successfully");
 
-    private void copyDefaultEnv(Path targetFile) throws IOException
-    {
-        try (InputStream in = getClass().getResourceAsStream("/example.env")) {
-            if (in == null) throw new RuntimeException("example.env introuvable dans /resources !");
-            Files.copy(in, targetFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load environment configuration", e);
         }
     }
 
-    public String get(String key) {  return dotenv.get(key); }
+    /**
+     * Copies the template .env file to the target location.
+     *
+     * @param targetFile The destination path for the .env file
+     * @throws IOException if the copy operation fails
+     */
+    private void copyTemplateEnv(Path targetFile) throws IOException
+    {
+        try (InputStream in = getClass().getResourceAsStream(ENV_TEMPLATE)) {
+            if (in == null) {
+                throw new RuntimeException(
+                        "Environment template not found in resources: " + ENV_TEMPLATE
+                );
+            }
+            Files.copy(in, targetFile);
+            logger.info("Created .env file from template at: {}", targetFile);
+        }
+    }
+
+    /**
+     * Retrieves an environment variable value.
+     *
+     * @param key The variable name
+     * @return The variable value, or null if not found
+     */
+    public String get(String key)
+    {
+        ensureLoaded();
+        return dotenv.get(key);
+    }
+
+    /**
+     * Retrieves an environment variable as Optional.
+     *
+     * @param key The variable name
+     * @return Optional containing the value, or empty if not found
+     */
+    public Optional<String> getOptional(String key)
+    {
+        ensureLoaded();
+        return Optional.ofNullable(dotenv.get(key));
+    }
+
+    /**
+     * Retrieves an environment variable with a default value.
+     *
+     * @param key The variable name
+     * @param defaultValue The default value if key is not found
+     * @return The variable value, or defaultValue if not found
+     */
+    public String get(String key, String defaultValue)
+    {
+        ensureLoaded();
+        return dotenv.get(key, defaultValue);
+    }
+
+    /**
+     * Retrieves a required environment variable.
+     *
+     * @param key The variable name
+     * @return The variable value
+     * @throws IllegalStateException if the key is not found
+     */
+    public String getRequired(String key)
+    {
+        ensureLoaded();
+        String value = dotenv.get(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(
+                    "Required environment variable not found: " + key
+            );
+        }
+        return value;
+    }
+
+    /**
+     * Retrieves an environment variable as an integer.
+     *
+     * @param key The variable name
+     * @param defaultValue The default value if key is not found or invalid
+     * @return The integer value
+     */
+    public int getInt(String key, int defaultValue)
+    {
+        try {
+            String value = get(key);
+            return value != null ? Integer.parseInt(value) : defaultValue;
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid integer value for {}, using default: {}", key, defaultValue);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Retrieves an environment variable as a boolean.
+     *
+     * @param key The variable name
+     * @param defaultValue The default value if key is not found
+     * @return The boolean value
+     */
+    public boolean getBoolean(String key, boolean defaultValue)
+    {
+        String value = get(key);
+        return value != null ? Boolean.parseBoolean(value) : defaultValue;
+    }
+
+    /**
+     * Checks if the environment has been loaded.
+     */
+    private void ensureLoaded()
+    {
+        if (dotenv == null) {
+            throw new IllegalStateException(
+                    "Environment not loaded. Call load() first."
+            );
+        }
+    }
+
+    /**
+     * Gets the working directory path.
+     *
+     * @return The current working directory
+     */
+    public Path getWorkingDirectory()
+    {
+        return workingDirectory;
+    }
 }
