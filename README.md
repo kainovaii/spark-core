@@ -5,10 +5,6 @@
 
 > Core package for the Obsidian Framework - Published on GitHub Packages
 
-## About
-
-This repository contains the source code for `obsidian-core`, the heart of the Obsidian framework. It includes all essential framework features: routing, middlewares, authentication, CSRF, templates, etc.
-
 **Full documentation**: [obsidian.kainovaii.dev](https://obsidian.kainovaii.dev)
 
 ## Installation
@@ -17,19 +13,9 @@ This repository contains the source code for `obsidian-core`, the heart of the O
 <dependency>
     <groupId>io.github.kainovaii</groupId>
     <artifactId>obsidian-core</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
-
-## Features
-
-- Annotation-based routing
-- Middleware system (`@Before`, `@After`)
-- Authentication (UserDetailsService)
-- CSRF protection
-- Flash messages
-- Pebble Templates integration
-- Styled error handler
 
 ## Build & Deploy
 
