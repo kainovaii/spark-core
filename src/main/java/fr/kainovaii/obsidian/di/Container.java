@@ -1,8 +1,16 @@
 package fr.kainovaii.obsidian.di;
 
+import fr.kainovaii.obsidian.di.annotations.Inject;
+import fr.kainovaii.obsidian.di.annotations.Repository;
+import fr.kainovaii.obsidian.di.annotations.Service;
+
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Dependency injection container.
@@ -16,8 +24,14 @@ public class Container
     /** Interface to implementation bindings */
     private static final Map<Class<?>, Class<?>> bindings = new HashMap<>();
 
+    /** Tracks classes currently being resolved to detect circular dependencies */
+    private static final Set<Class<?>> resolving = new HashSet<>();
+
+    /** Allowed component annotations */
+    private static final Set<Class<? extends Annotation>> COMPONENT_ANNOTATIONS = Set.of(Service.class, Repository.class);
+
     /**
-     * Registers a singleton instance.
+     * Registers a singleton instance manually.
      *
      * @param clazz Class type
      * @param instance Instance to register
@@ -40,24 +54,42 @@ public class Container
 
     /**
      * Resolves a class instance with automatic dependency injection.
-     * Returns existing singleton or creates new instance with constructor injection.
-     *
      * @param clazz Class to resolve
      * @param <T> Type parameter
-     * @return Resolved instance
-     * @throws RuntimeException if dependency resolution fails
+     * @return Resolved singleton instance
+     * @throws IllegalArgumentException if class is not an annotated component
+     * @throws RuntimeException if a circular dependency or instantiation error is detected
      */
     @SuppressWarnings("unchecked")
     public static <T> T resolve(Class<T> clazz)
     {
-        if (singletons.containsKey(clazz)) {
-            return (T) singletons.get(clazz);
-        }
-
+        // Resolve via bindings first (supports interface injection)
         Class<?> resolvedClass = bindings.getOrDefault(clazz, clazz);
 
+        // Return existing singleton
+        if (singletons.containsKey(resolvedClass)) {
+            return (T) singletons.get(resolvedClass);
+        }
+
+        // Guard: only annotated components or manually bound classes are allowed
+        if (!isComponent(resolvedClass) && !bindings.containsKey(clazz)) {
+            throw new IllegalArgumentException(
+                    "Cannot resolve '" + resolvedClass.getSimpleName() + "': " +
+                            "class must be annotated with @Service or @Repository, " +
+                            "or registered manually via Container.bind() / Container.singleton()."
+            );
+        }
+
+        // Guard: circular dependency detection
+        if (resolving.contains(resolvedClass)) {
+            throw new RuntimeException(
+                    "Circular dependency detected while resolving: " + resolvedClass.getName()
+            );
+        }
+
+        resolving.add(resolvedClass);
         try {
-            Constructor<?> constructor = resolvedClass.getDeclaredConstructors()[0];
+            Constructor<?> constructor = selectConstructor(resolvedClass);
             constructor.setAccessible(true);
 
             Class<?>[] paramTypes = constructor.getParameterTypes();
@@ -68,12 +100,63 @@ public class Container
             }
 
             T instance = (T) constructor.newInstance(params);
-            singletons.put(clazz, instance);
+            singletons.put(resolvedClass, instance);
 
             return instance;
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Cannot resolve dependency: " + clazz.getName(), e);
+            throw new RuntimeException("Cannot resolve dependency: " + resolvedClass.getName(), e);
+        } finally {
+            resolving.remove(resolvedClass);
         }
+    }
+
+    /**
+     * Selects the constructor to use for injection.
+     * @param clazz Class to inspect
+     * @return Constructor to use
+     * @throws IllegalArgumentException if ambiguous constructors without @Inject
+     */
+    private static Constructor<?> selectConstructor(Class<?> clazz)
+    {
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+
+        // Look for @Inject-annotated constructor
+        Constructor<?>[] injected = Arrays.stream(constructors)
+                .filter(c -> c.isAnnotationPresent(Inject.class))
+                .toArray(Constructor[]::new);
+
+        if (injected.length == 1) {
+            return injected[0];
+        }
+
+        if (injected.length > 1) {
+            throw new IllegalArgumentException(
+                    "'" + clazz.getSimpleName() + "' has multiple constructors annotated with @Inject. Only one is allowed."
+            );
+        }
+
+        // No @Inject: only valid if there is exactly one constructor
+        if (constructors.length == 1) {
+            return constructors[0];
+        }
+
+        throw new IllegalArgumentException(
+                "'" + clazz.getSimpleName() + "' has " + constructors.length + " constructors. " +
+                        "Annotate the one to use with @Inject."
+        );
+    }
+
+    /**
+     * Checks whether a class is an annotated component.
+     *
+     * @param clazz Class to check
+     * @return true if annotated with @Service or @Repository
+     */
+    private static boolean isComponent(Class<?> clazz)
+    {
+        return COMPONENT_ANNOTATIONS.stream().anyMatch(clazz::isAnnotationPresent);
     }
 
     /**
@@ -84,5 +167,6 @@ public class Container
     {
         singletons.clear();
         bindings.clear();
+        resolving.clear();
     }
 }
