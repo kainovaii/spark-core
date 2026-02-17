@@ -14,8 +14,8 @@ import java.util.logging.Logger;
  * Scanner for discovering and registering LiveComponents.
  * Scans package for @LiveComponent annotated classes and registers them with ComponentManager.
  */
-public class LiveComponentScanner {
-
+public class LiveComponentScanner
+{
     /** Logger instance */
     private static final Logger logger = Logger.getLogger(LiveComponentScanner.class.getName());
 
@@ -32,8 +32,8 @@ public class LiveComponentScanner {
         try {
             Reflections reflections = new Reflections(
                     new ConfigurationBuilder()
-                            .forPackage(basePackage)
-                            .setScanners(Scanners.TypesAnnotated, Scanners.SubTypes)
+                    .forPackage(basePackage)
+                    .setScanners(Scanners.TypesAnnotated, Scanners.SubTypes)
             );
 
             Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(
@@ -69,8 +69,8 @@ public class LiveComponentScanner {
                 clazz.getAnnotation(LiveComponentImpl.class);
 
         String componentName = (annotation.value() != null && !annotation.value().isEmpty())
-                ? annotation.value()
-                : clazz.getSimpleName();
+            ? annotation.value()
+            : clazz.getSimpleName();
 
         componentManager.register(componentName, (Class<? extends LiveComponent>) clazz);
         logger.info("Registered LiveComponent: " + componentName + " (" + clazz.getName() + ")");

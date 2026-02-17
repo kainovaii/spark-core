@@ -358,23 +358,20 @@ class ObsidianComponents {
      */
     captureState(element) {
         const state = {};
-
-        // Capture all input, textarea, select values
         const inputs = element.querySelectorAll('input, textarea, select');
-        inputs.forEach(input => {
-            const id = input.id;
-            if (id) {
-                // Use ID as key
-                const key = id.replace(/^.*-/, ''); // Remove component ID prefix
-                if (input.type === 'checkbox') {
-                    state[key] = input.checked;
-                } else if (input.type === 'radio') {
-                    if (input.checked) {
-                        state[input.name] = input.value;
-                    }
-                } else {
+        inputs.forEach(input =>
+        {
+            const key = input.getAttribute('name') || input.getAttribute('live:model');
+            if (!key) return;
+
+            if (input.type === 'checkbox') {
+                state[key] = input.checked;
+            } else if (input.type === 'radio') {
+                if (input.checked) {
                     state[key] = input.value;
                 }
+            } else {
+                state[key] = input.value;
             }
         });
 

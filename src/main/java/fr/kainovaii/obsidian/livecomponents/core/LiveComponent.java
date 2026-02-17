@@ -145,7 +145,8 @@ public abstract class LiveComponent
      * @param targetType Target class
      * @return Converted value
      */
-    private Object convertValue(Object value, Class<?> targetType) {
+    private Object convertValue(Object value, Class<?> targetType)
+    {
         if (value == null || targetType.isInstance(value)) return value;
 
         if (targetType == Integer.class || targetType == int.class) {

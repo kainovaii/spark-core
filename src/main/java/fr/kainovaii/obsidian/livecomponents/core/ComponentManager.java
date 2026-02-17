@@ -247,7 +247,6 @@ public class ComponentManager
     public void clearSession(Session session) {
         if (session == null) return;
         String prefix = session.id() + ":";
-        activeComponents.asMap().keySet()
-                .removeIf(key -> key.startsWith(prefix));
+        activeComponents.asMap().keySet().removeIf(key -> key.startsWith(prefix));
     }
 }

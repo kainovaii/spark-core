@@ -66,7 +66,6 @@ public class WebServer
 
         ControllerLoader.loadControllers();
 
-        // ⭐ INIT EN DERNIER
         init();
 
         logger.info("Web server started on port {}", Obsidian.getWebPort());

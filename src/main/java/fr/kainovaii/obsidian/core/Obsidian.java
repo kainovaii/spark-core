@@ -7,8 +7,11 @@ import fr.kainovaii.obsidian.database.MigrationManager;
 import fr.kainovaii.obsidian.di.ComponentScanner;
 import fr.kainovaii.obsidian.di.Container;
 import fr.kainovaii.obsidian.livecomponents.core.ComponentManager;
+import fr.kainovaii.obsidian.livecomponents.core.LiveComponent;
+import fr.kainovaii.obsidian.livecomponents.core.LiveComponentsLoader;
 import fr.kainovaii.obsidian.livecomponents.pebble.ComponentExtension;
 import fr.kainovaii.obsidian.livecomponents.scanner.LiveComponentScanner;
+import fr.kainovaii.obsidian.validation.pebble.ValidationExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.loader.ClasspathLoader;
 import org.slf4j.LoggerFactory;
@@ -24,9 +27,6 @@ public class Obsidian
     public final static Logger logger = LoggerFactory.getLogger(Obsidian.class);
     /** Base package for component scanning */
     private static String basePackage;
-
-    /** LiveComponents manager */
-    private static ComponentManager componentManager;
 
     /**
      * Default constructor.
@@ -102,38 +102,7 @@ public class Obsidian
      * Initializes LiveComponents system.
      * Configures Pebble and registers components in container.
      */
-    public void loadLiveComponents()
-    {
-        logger.info("Loading LiveComponents...");
-        try {
-            ClasspathLoader loader = new ClasspathLoader();
-            PebbleEngine componentPebble = new PebbleEngine.Builder()
-                    .loader(loader)
-                    .cacheActive(true)
-                    .build();
-
-            componentManager = new ComponentManager(componentPebble);
-
-            LiveComponentScanner.scan(basePackage, componentManager);
-
-            componentPebble = new PebbleEngine.Builder()
-                    .loader(loader)
-                    .extension(new ComponentExtension(componentManager))
-                    .cacheActive(true)
-                    .build();
-
-            java.lang.reflect.Field field = ComponentManager.class.getDeclaredField("pebbleEngine");
-            field.setAccessible(true);
-            field.set(componentManager, componentPebble);
-
-            Container.singleton(ComponentManager.class, componentManager);
-
-            logger.info("LiveComponents loaded successfully!");
-        } catch (Exception e) {
-            logger.error("Failed to load LiveComponents: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+    public void loadLiveComponents() { LiveComponentsLoader.loadLiveComponents(); }
 
     /**
      * Loads configuration and environment variables.
@@ -193,7 +162,7 @@ public class Obsidian
      * @return ComponentManager instance
      */
     public static ComponentManager getComponentManager() {
-        return componentManager;
+        return LiveComponentsLoader.getComponentManager();
     }
 
     public void init()
