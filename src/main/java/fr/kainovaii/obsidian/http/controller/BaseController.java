@@ -99,7 +99,7 @@ public class BaseController
         UserDetails user = getUserService().loadByUsername(username);
         if (user == null || !user.isEnabled()) return false;
 
-        if (BCrypt.checkpw(password, user.getPassword()))
+        if (checkPassword(password, user.getPassword()))
         {
             session.attribute("logged", true);
             session.attribute("user_id", user.getId());
@@ -108,6 +108,29 @@ public class BaseController
             return true;
         }
         return false;
+    }
+
+    /**
+     * Hashes a plain text password using BCrypt.
+     *
+     * @param password Plain text password to hash
+     * @return BCrypt hashed password
+     */
+    protected static String hashPassword(String password)
+    {
+        return BCrypt.hashpw(password, BCrypt.gensalt());
+    }
+
+    /**
+     * Verifies a plain text password against a BCrypt hash.
+     *
+     * @param password Plain text password to verify
+     * @param hash     BCrypt hash to compare against
+     * @return true if the password matches the hash, false otherwise
+     */
+    protected static boolean checkPassword(String password, String hash)
+    {
+        return BCrypt.checkpw(password, hash);
     }
 
     /**

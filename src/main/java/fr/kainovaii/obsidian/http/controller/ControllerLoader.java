@@ -77,13 +77,21 @@ public class ControllerLoader
                     Method applyGlobals = adviceClass.getMethod("applyGlobals", Request.class, Response.class);
                     applyGlobals.invoke(null, req, res);
                 } catch (NoSuchMethodException e) {
-                    logger.info("@GlobalAdvice class " + adviceClass.getName() + " doesn't have applyGlobals(Request, Response) method");
+                    logger.info("@GlobalAdvice class {} doesn't have applyGlobals(Request, Response) method", adviceClass.getName());
+                } catch (java.lang.reflect.InvocationTargetException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof spark.HaltException) {
+                        throw (spark.HaltException) cause;
+                    }
+                    logger.error("Error calling applyGlobals on {}: {}", adviceClass.getName(), cause != null ? cause.getMessage() : "unknown", cause);
                 } catch (Exception e) {
-                    logger.info("Error calling applyGlobals on " + adviceClass.getName() + ": " + e.getMessage());
+                    logger.error("Error calling applyGlobals on {}: {}", adviceClass.getName(), e.getMessage(), e);
                 }
             }
+        } catch (spark.HaltException e) {
+            throw e;
         } catch (Exception e) {
-            logger.info("Error scanning for @GlobalAdvice: " + e.getMessage());
+            logger.error("Error scanning for @GlobalAdvice: {}", e.getMessage(), e);
         }
     }
 

@@ -2,11 +2,11 @@ package fr.kainovaii.obsidian.database.seeder;
 
 import fr.kainovaii.obsidian.core.Obsidian;
 import fr.kainovaii.obsidian.database.seeder.annotations.Seeder;
+import fr.kainovaii.obsidian.di.Container;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -57,18 +57,22 @@ public class SeederLoader
     }
 
     /**
-     * Executes seeder class by calling its seed() method.
+     * Executes a seeder class by instantiating it and calling its seed() method.
      *
      * @param seederClass Seeder class
      */
     private static void executeSeeder(Class<?> seederClass)
     {
         try {
-            Method seedMethod = seederClass.getMethod("seed");
-            seedMethod.invoke(null);
-            logger.info("✓ Seeded: {}", seederClass.getSimpleName());
-        } catch (NoSuchMethodException e) {
-            logger.warn("@Seeder class {} doesn't have a seed() method", seederClass.getName());
+            Object instance = seederClass.getDeclaredConstructor().newInstance();
+            Container.injectFields(instance);
+
+            if (instance instanceof SeederInterface seeder) {
+                seeder.seed();
+                logger.info("✔ Seeded: {}", seederClass.getSimpleName());
+            } else {
+                logger.warn("@Seeder class {} does not implement SeederInterface", seederClass.getName());
+            }
         } catch (Exception e) {
             logger.error("Failed to execute seeder for {}: {}",
                     seederClass.getName(), e.getMessage(), e);

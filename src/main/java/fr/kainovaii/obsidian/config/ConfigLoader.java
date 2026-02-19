@@ -6,7 +6,6 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -56,18 +55,21 @@ public class ConfigLoader
     }
 
     /**
-     * Executes configuration class by calling its configure() method.
+     * Executes a configuration class by instantiating it and calling its configure() method.
      *
      * @param configClass Configuration class
      */
     private static void executeConfiguration(Class<?> configClass)
     {
         try {
-            Method configureMethod = configClass.getMethod("configure");
-            configureMethod.invoke(null);
-            logger.info("✓ Configured: {}", configClass.getSimpleName());
-        } catch (NoSuchMethodException e) {
-            logger.warn("@Config class {} doesn't have a configure() method", configClass.getName());
+            Object instance = configClass.getDeclaredConstructor().newInstance();
+
+            if (instance instanceof ConfigInterface config) {
+                config.configure();
+                logger.info("✔ Configured: {}", configClass.getSimpleName());
+            } else {
+                logger.warn("@Config class {} does not implement ConfigInterface", configClass.getName());
+            }
         } catch (Exception e) {
             logger.error("Failed to execute configuration for {}: {}",
                     configClass.getName(), e.getMessage(), e);

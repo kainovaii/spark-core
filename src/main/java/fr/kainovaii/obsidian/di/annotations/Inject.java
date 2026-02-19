@@ -6,11 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a constructor as the injection point for the DI container.
+ * Marks a constructor or field as the injection point for the DI container.
  * Required when a class has multiple constructors.
  * Optional when a class has a single constructor.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.CONSTRUCTOR)
+@Target({ElementType.CONSTRUCTOR, ElementType.FIELD})
 public @interface Inject {
 }

@@ -5,6 +5,7 @@ import fr.kainovaii.obsidian.routing.pebble.RouteExtension;
 import fr.kainovaii.obsidian.security.csrf.pebble.CsrfExtension;
 import fr.kainovaii.obsidian.livecomponents.pebble.ComponentHelperExtension;
 import fr.kainovaii.obsidian.flash.pebble.FlashExtension;
+import fr.kainovaii.obsidian.template.extension.MarkdownFilter;
 import fr.kainovaii.obsidian.template.extension.StripTagsFilter;
 import fr.kainovaii.obsidian.validation.pebble.ValidationExtension;
 import spark.ModelAndView;
@@ -32,16 +33,17 @@ public class PebbleTemplateEngine extends TemplateEngine
     {
         ClasspathLoader loader = new ClasspathLoader();
         engine = new PebbleEngine.Builder()
-                .loader(loader)
-                .extension(new RouteExtension())
-                .extension(new StripTagsFilter())
-                .extension(new CsrfExtension())
-                .extension(new FlashExtension())
-                .extension(new ComponentHelperExtension())
-                .extension(new ValidationExtension())
-                .extension(new LiveComponentsScriptExtension())
-                .cacheActive(true)
-                .build();
+            .loader(loader)
+            .extension(new RouteExtension())
+            .extension(new StripTagsFilter())
+            .extension(new CsrfExtension())
+            .extension(new FlashExtension())
+            .extension(new ComponentHelperExtension())
+            .extension(new ValidationExtension())
+            .extension(new LiveComponentsScriptExtension())
+            .extension(new MarkdownFilter())
+            .cacheActive(true)
+            .build();
     }
 
     /**

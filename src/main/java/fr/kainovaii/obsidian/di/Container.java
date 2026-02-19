@@ -6,6 +6,7 @@ import fr.kainovaii.obsidian.di.annotations.Service;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +16,7 @@ import java.util.Set;
 /**
  * Dependency injection container.
  * Manages singleton instances and handles automatic dependency resolution.
+ * Supports both constructor injection and field injection via @Inject.
  */
 public class Container
 {
@@ -54,6 +56,8 @@ public class Container
 
     /**
      * Resolves a class instance with automatic dependency injection.
+     * Supports constructor injection and field injection via @Inject.
+     *
      * @param clazz Class to resolve
      * @param <T> Type parameter
      * @return Resolved singleton instance
@@ -102,6 +106,9 @@ public class Container
             T instance = (T) constructor.newInstance(params);
             singletons.put(resolvedClass, instance);
 
+            // Inject @Inject-annotated fields
+            injectFields(instance);
+
             return instance;
         } catch (IllegalArgumentException e) {
             throw e;
@@ -113,7 +120,31 @@ public class Container
     }
 
     /**
+     * Injects dependencies into @Inject-annotated fields of an existing instance.
+     * Useful for classes not managed by the container (e.g. Seeders).
+     *
+     * @param instance Instance to inject into
+     */
+    public static void injectFields(Object instance)
+    {
+        Class<?> clazz = instance.getClass();
+        for (Field field : clazz.getDeclaredFields()) {
+            if (!field.isAnnotationPresent(Inject.class)) continue;
+            try {
+                field.setAccessible(true);
+                Object dependency = resolve(field.getType());
+                field.set(instance, dependency);
+            } catch (Exception e) {
+                throw new RuntimeException(
+                        "Failed to inject field '" + field.getName() + "' in " + clazz.getSimpleName(), e
+                );
+            }
+        }
+    }
+
+    /**
      * Selects the constructor to use for injection.
+     *
      * @param clazz Class to inspect
      * @return Constructor to use
      * @throws IllegalArgumentException if ambiguous constructors without @Inject
